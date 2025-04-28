@@ -1,0 +1,127 @@
+---
+title: "Psych Replication Analysis"
+author: "CJ Robinson"
+date: "2025-04-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Set up
+
+```{r}
+library(tidyverse)
+library(clipr)
+library(haven)
+library(ggbeeswarm)
+```
+
+```{r}
+df <- read_csv("../data/replication_citation_df.csv") %>% 
+  filter(!is.na(ref_original), 
+         ref_original != "nan") %>% 
+  # hand code some errors
+  mutate(cited_by_count = case_when(
+    ref_original == "Hart, Y., Dillon, M. R., Marantan, A., Cardenas, A. L., Spelke, E., & Mahadevan, L. (2018). The statistical shape of geometric reasoning. Scientific reports, 8(1), 1-12." ~ "0",
+    ref_original == "Heck, P. R., Chabris, C. F., Watts, D. J., & Meyer, M. N. (2020). Objecting to experiments even while approving of the policies or treatments they compare. Proceedings of the National Academy of Sciences, 117(32), 18948-18950." ~ "23",
+    ref_original == "Otto, R. A., Skatova, A., Madlon-Kay, S., & Daw, N. (2014). Cognitive Control Mode Predicts Behavioral Expression of Model-Based Reinforcement-Learning. In Proceedings of the Annual Meeting of the Cognitive Science Society (Vol. 36, No. 36)." ~ "0",
+    .default = cited_by_count
+  ))%>% 
+  mutate(cited_by_count = as.numeric(cited_by_count))
+
+ind_data <- read_csv("../data/ML2_S2.csv")
+```
+
+
+
+```{r}
+df %>% 
+  group_by(result) %>% 
+  tally() %>%
+    mutate(success_flag = ifelse(result == "Success", "Success", "Not replicable")) %>% 
+  write_clip()
+```
+
+```{r}
+df_years <- df %>% 
+  mutate(year = str_extract(ref_original, "\\b(19|20)\\d{2}\\b"))
+
+df_years %>% 
+  group_by(year, result) %>% 
+  tally() %>% 
+  ggplot(aes(x =year, y = n, fill=result)) + 
+  geom_bar(stat = "identity")
+
+```
+
+```{r}
+df_years %>% 
+  group_by(year, result) %>% 
+  tally() %>% 
+  ggplot(aes(x =year, y = n, fill=result)) + 
+  geom_bar(stat = "identity", position = "fill")
+
+```
+
+
+
+```{r}
+df_years %>% 
+  group_by(year, result) %>% 
+  tally() %>% 
+  pivot_wider(names_from = "result", values_from = "n", names_prefix = "result.")%>% 
+  mutate(across(starts_with("result."), ~replace_na(., 0))) %>% 
+  mutate(sum = rowSums(across(starts_with("result.")))) %>% 
+  filter(year > 2000) %>% 
+  mutate(success_prop = `result.Success` / sum) %>% 
+  ggplot(aes(x =year, y = 1-success_prop )) + 
+  geom_bar(stat = "identity") + 
+  ggtitle("Percentage of failed replications by year of publication")
+
+```
+
+
+## Citations by status 
+
+```{r}
+df_years %>% 
+  mutate(success_flag = ifelse(result == "Success",1,0)) %>% 
+  group_by(ref_original, cited_by_count, success_flag, result) %>% 
+  summarize() %>%
+  group_by(result) %>%
+  summarize(sum(cited_by_count))  %>% 
+  ggplot(aes(x = n, y=result)) + 
+  geom_bar() + 
+  theme_minimal()
+
+
+```
+
+
+
+
+```{r}
+flag_ind_data <- ind_data %>% 
+  mutate(
+    flag = case_when(
+      rowSums(!is.na(select(., starts_with("zav1.")))) > 0 ~ "cool",
+      rowSums(!is.na(select(., starts_with("zav2.")))) > 0 ~ "warm",
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+```{r}
+flag_ind_data %>% 
+  ggplot(aes(x = as.factor(zav.dv.2), y = flag, fill = flag)) +
+  geom_count(aes(size = after_stat(n)), show.legend = FALSE) +
+  geom_jitter(height = 0.2, alpha = 0.5) +
+  scale_size_area(max_size = 10) +
+  theme_minimal() +
+  labs(x = "zav.dv.2 (discrete values)", y = "Flag") +
+  theme(legend.position = "top")
+```
+
+
