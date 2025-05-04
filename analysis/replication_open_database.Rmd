@@ -19,7 +19,57 @@ library(ggbeeswarm)
 ```
 
 ```{r}
-df <- read_csv("../data/replication_citation_df.csv") %>% 
+df <- read_csv("../data/replication_citation_df.csv") 
+
+ind_data <- read_csv("../data/ML2_S2.csv")
+
+# Load the package
+library(FReD)
+
+# Load the replication dataset
+fred_data <- load_fred_data()
+```
+
+
+```{r}
+filtered <- fred_data %>% 
+  # filter out invalidated results
+  filter(!is.na(result) | id == "Arb212", validated == 1) %>% 
+  # highlight power posing just for reference
+  mutate(result_color = ifelse(id == "Arb212", "power poser", result)) %>% 
+  select(es_original, es_replication, result_color) 
+
+rownames(filtered) <- NULL
+
+#write out to rawgraphs
+filtered %>% 
+  write_clip()
+
+```
+
+# Make dot plot bar chart
+
+```{r}
+fred_data %>% 
+  filter(!is.na(result) | id == "Arb212", validated >= 1) %>% 
+  group_by(result) %>%
+  mutate(
+    idx = row_number() - 1,
+    x = idx %% 5,
+    y = -(idx %/% 5)
+  ) %>%
+  ungroup() %>% 
+  ggplot(aes( x= x, y = -y, color = ifelse(id == "Arb212", "power poser", result))) + 
+   geom_point(size = .01, ) + 
+    facet_wrap(~result, scales = "free_x") 
+
+ggsave("../img/dot_plot_bar.pdf")
+```
+
+### Data Cleaning
+
+```{r}
+df_years <- df %>% 
   filter(!is.na(ref_original), 
          ref_original != "nan") %>% 
   # hand code some errors
@@ -28,16 +78,20 @@ df <- read_csv("../data/replication_citation_df.csv") %>%
     ref_original == "Heck, P. R., Chabris, C. F., Watts, D. J., & Meyer, M. N. (2020). Objecting to experiments even while approving of the policies or treatments they compare. Proceedings of the National Academy of Sciences, 117(32), 18948-18950." ~ "23",
     ref_original == "Otto, R. A., Skatova, A., Madlon-Kay, S., & Daw, N. (2014). Cognitive Control Mode Predicts Behavioral Expression of Model-Based Reinforcement-Learning. In Proceedings of the Annual Meeting of the Cognitive Science Society (Vol. 36, No. 36)." ~ "0",
     .default = cited_by_count
-  ))%>% 
-  mutate(cited_by_count = as.numeric(cited_by_count))
+  )) %>% 
+  mutate(cited_by_count = as.numeric(cited_by_count)) %>% 
+  mutate(year = str_extract(ref_original, "\\b(19|20)\\d{2}\\b")) %>% 
+  group_by(ref_original) %>% 
+  mutate(findings_count = n()) %>%
+  ungroup() 
 
-ind_data <- read_csv("../data/ML2_S2.csv")
 ```
 
 
+## Tree Map
 
 ```{r}
-df %>% 
+df_years %>% 
   group_by(result) %>% 
   tally() %>%
     mutate(success_flag = ifelse(result == "Success", "Success", "Not replicable")) %>% 
@@ -45,10 +99,45 @@ df %>%
 ```
 
 ```{r}
-df_years <- df %>% 
-  mutate(year = str_extract(ref_original, "\\b(19|20)\\d{2}\\b"))
-
 df_years %>% 
+  mutate(success_flag = ifelse(result == "Success",1,0),
+         findings_flag = ifelse(findings_count == 1, "single finding", "multiple")) %>% 
+  group_by(ref_original, cited_by_count,findings_flag) %>% 
+  summarize(all_success = min(success_flag)) %>% 
+  group_by(all_success,findings_flag) %>% 
+  summarize(citations = sum(cited_by_count),
+            paper_count = n()) %>% 
+  ggplot(aes(x = (all_success), y= citations/paper_count)) + 
+  geom_bar(stat="identity") + 
+  facet_wrap(~findings_flag) + 
+  theme_minimal()
+```
+
+```{r}
+df_years %>% 
+  mutate(success_flag = ifelse(result == "Success",1,0),
+         findings_flag = ifelse(findings_count == 1, "single finding", "multiple")) %>% 
+  group_by(ref_original, cited_by_count,findings_flag) %>% 
+  summarize(all_success = min(success_flag)) %>% 
+  group_by(all_success, findings_flag) %>% 
+  summarize(citations = sum(cited_by_count),
+            paper_count = n()) %>% 
+  ggplot(aes(x = factor(all_success), y= citations)) + 
+  geom_bar(stat="identity") + 
+  theme_minimal()
+```
+
+
+
+
+
+
+
+
+# Other
+
+```{r}
+df_years %>%
   group_by(year, result) %>% 
   tally() %>% 
   ggplot(aes(x =year, y = n, fill=result)) + 
@@ -86,17 +175,54 @@ df_years %>%
 ## Citations by status 
 
 ```{r}
+df_years %>% arrange(desc(cited_by_count))
+```
+
+
+```{r}
 df_years %>% 
   mutate(success_flag = ifelse(result == "Success",1,0)) %>% 
   group_by(ref_original, cited_by_count, success_flag, result) %>% 
   summarize() %>%
   group_by(result) %>%
-  summarize(sum(cited_by_count))  %>% 
-  ggplot(aes(x = n, y=result)) + 
-  geom_bar() + 
+  summarize(citations = sum(cited_by_count),
+            paper_count = n())  %>% 
+  ggplot(aes(x = result, y=citations )) + 
+  geom_bar(stat="identity") + 
+  coord_flip() + 
   theme_minimal()
+```
 
+```{r}
+df_years %>% 
+  mutate(success_flag = ifelse(result == "Success",1,0)) %>% 
 
+  group_by(ref_original, cited_by_count, success_flag, result) %>% 
+  group_by(success_flag,result,findings_flag = ifelse(findings_count == 1, "single finding", "multiple")) %>%
+  summarize(citations = sum(cited_by_count),
+            paper_count = n())  %>% 
+  ggplot(aes(x = success_flag, y= citations/paper_count)) + 
+  geom_bar(stat="identity") + 
+  coord_flip() + 
+  facet_wrap(~findings_flag) + 
+  theme_minimal()
+```
+
+```{r}
+df_years %>% 
+  mutate(success_flag = ifelse(result == "Success",1,0)) %>% 
+  group_by(ref_original) %>% 
+  mutate(findings_count = n()) %>%
+  ungroup() %>% 
+  group_by(ref_original, cited_by_count, success_flag, result) %>% 
+  group_by(success_flag,result,findings_flag = ifelse(findings_count == 1, "single finding", "multiple")) %>%
+  summarize(citations = sum(cited_by_count),
+            paper_count = n())  %>% 
+  ggplot(aes(x = success_flag, y= citations/paper_count)) + 
+  geom_bar(stat="identity") + 
+  coord_flip() + 
+  facet_wrap(~findings_flag) + 
+  theme_minimal()
 ```
 
 
@@ -122,6 +248,80 @@ flag_ind_data %>%
   theme_minimal() +
   labs(x = "zav.dv.2 (discrete values)", y = "Flag") +
   theme(legend.position = "top")
+```
+
+
+
+```{r}
+
+```
+
+```{r}
+fred_data %>% 
+  group_by(discipline, result) %>% 
+  tally() %>% 
+  pivot_wider(names_from = result, values_from = n) %>% 
+  mutate(success_prop = `successful replication` / (`successful replication` + `OS not significant` + `failed replication`)) %>%
+  filter(`successful replication` > 5, 
+         !is.na(discipline)) %>% 
+  ggplot(aes( x= reorder(discipline, desc(success_prop)), y = success_prop)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip() + 
+  theme_minimal()
+```
+
+```{r}
+fred_data %>% 
+  filter(!is.na(result)) %>% 
+  #filter(id == "Manylabs2_26") %>%
+  filter(id == "Arb212") %>% 
+
+  ggplot(aes( x= es_original, y = es_replication)) + 
+  geom_point(size = .5) + 
+  scale_y_continuous(limits = c(-.75, 1)) +
+  scale_x_continuous(limits = c(0, 1)) +
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal()
+```
+
+
+```{r}
+fred_data %>% 
+  filter(!is.na(result) | id == "Arb212", vaidated >= 1) %>% 
+  write_df
+  ggplot(aes( x= es_original, y = es_replication)) + 
+  geom_point(size = .5) + 
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
+  theme_minimal()
+```
+
+
+```{r}
+
+
+  ggplot(aes( x= es_original, y = es_replication, color = ifelse(id == "Arb212", "power poser", result))) + 
+    geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
+  geom_point(size = .5) + 
+  theme_minimal()
+
+ggsave("../img/fred_scatter.pdf")
+```
+
+```{r}
+fred_data %>% 
+  filter(!is.na(result) | id == "Arb212", validated >= 1) %>% 
+  group_by(result) %>%
+  mutate(
+    idx = row_number() - 1,
+    x = idx %% 5,
+    y = -(idx %/% 5)
+  ) %>%
+  ungroup() %>% 
+  ggplot(aes( x= x, y = -y, color = ifelse(id == "Arb212", "power poser", result))) + 
+   geom_point(size = .01, ) + 
+    facet_wrap(~result, scales = "free_x") 
+
+ggsave("../img/dot_plot_bar.pdf")
 ```
 
 
