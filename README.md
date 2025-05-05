@@ -32,14 +32,40 @@ Visualizations:
 
 ## Files
 
+1. **analysis/gs_scrape.ipynb** - Playwright/BS scraper for Google Scholar
+- note that due to a nan value in my list of citations, the scraper failed midway through on the first one. instead of rerunning completely, I restarted halfway through the list since the risk of being banned by Google is high
 
+2. **analysis/replication_open_database.Rmd** - R Markdown file with code to download the dataset and analyze the data for porting into visualization software
+
+3. **data/gs_scrape.csv and data/gs_scape_2.csv** -- the results of the two scrapes of Google Scholar
+
+4. **data/replication_database.csv** - original data retrieved from FORRT
+
+5. **data/replication_citation_df.csv** - data with scraped google scholar results joined
+
+6. *img* - my illustrator files and ai2html outputs, plus a cover photo
 
 ## Data Collection and Analysis
 
-1. I downloaded the base dataset using a [R package built by FORRT](https://github.com/forrtproject/FReD). 
+1. I downloaded the base dataset using a [R package built by FORRT](https://github.com/forrtproject/FReD). A different version of this dataset is also available on the website, which is what I built the scraper off of initially. 
 
+2. I took the original references in the dataset and used Playwright to loop through the 400 studies and search Google Scholar with each. I would then scrape the first result entry with BeautifulSoup getting title, abstract and citation. 
+
+3. I broke CAPTCHA's using Jonathan Soma's [NopeCHA tutoial](https://jonathansoma.com/everything/scraping/solving-captchas-in-playwright-with-nopecha/), launching Playwright with the extension and my API key
+
+4. Exploratory data analysis in R and visualizations on the scatter plot of original vs replication effects, total count of replications and success rate by field. 
+
+5. Adobe Illustrator for responsive design in mobile/smaller device sizes
+
+6. HTML/CSS/JS to make the scrollytelling experience complete, starting with one example of power posing and continuing on to the entire dataset.
 
 ## Learnings
+
+This was one project where a single line in the piece took the majority of the analysis time. I was hoping to find that successful replications were cited less often than those that were not successfuls since I had seen research showing this relationship, but sadly that was not the case. 
+
+Scraping Google was a different beast since they're fairly stingy with their scraping policies. I was first going to use a Python package for scraping the site, but soon realized it would be too risky given the amount of searches I was hoping to do plus the metadata I wanted to scrape. Instead, I manually created the scraper so that I could control CATPCHAs and avoid getting my IP banned, which was a success! 
+
+Next time, I'd like to add an interactive element where the reader is able to participate in one of the replicaiton studies and set up a backend to store user data. I'd then love to have user data displayed alongside some granular study data I found (thanks of course to the increased transparency of psychology these days)!
 
 ## Thank you for visiting! 
 

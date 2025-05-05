@@ -26,8 +26,6 @@ library(ggbeeswarm)
 ```{r}
 df <- read_csv("../data/replication_citation_df.csv") 
 
-ind_data <- read_csv("../data/ML2_S2.csv")
-
 # Load the package
 library(FReD)
 
