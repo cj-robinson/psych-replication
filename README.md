@@ -1,6 +1,6 @@
 # Pyschology Replication Crisis
 
-Find the story here: [cj-robinson.github.io/replication-crisis](https://cj-robinson.github.io/jeopardy/)
+Find the story here: [cj-robinson.github.io/replication-crisis](https://cj-robinson.github.io/replication-crisis/)
 
 This was an assignment for our Data Studio class at Columbia Journalism School's Data Journalism program, intended to think about how to create end-to-end data stories about topics of our choosing on deadline.
 
