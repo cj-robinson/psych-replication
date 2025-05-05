@@ -1,4 +1,4 @@
-# Pyschology Replication Crisis
+# Psychology Replication Crisis
 
 Find the story here: [cj-robinson.github.io/replication-crisis](https://cj-robinson.github.io/replication-crisis/)
 
