@@ -8,7 +8,9 @@ This was an assignment for our Data Studio class at Columbia Journalism School's
 
 This project explores the replication crisis that has gripped the pyschology field for the past 15 years. Attempts to replicate long-held hypotheses were constantly failing due to a confluence of factors explored in the piece. The crisis has spurred a large overhaul in the scientific community as transparency becomes increasingly important.
 
-I've always been interested and skeptical of pop pyschology. I remember attempting to power pose before interviews after seeing Amy Cuddy's TED Talk, and I was even more intrigued reading news about the academic debates surrounding these seemingly 'revolutionary' ideas. During college, I worked in a pyschology lab attempting to measure how 'priming' participants could change their perceptions, and as I learned more about statistics and testing in work, the more I doubted the whole system. 
+I've long been equally interested and skeptical of pop pyschology. I (maybe embarrasingly) remember attempting to power pose before interviews after seeing Amy Cuddy's TED Talk, and I was very intrigued reading news about the academic debates surrounding these seemingly 'revolutionary' ideas.
+
+During college, I worked in a pyschology lab attempting to measure how 'priming' participants could change their perceptions, and as I learned more about statistics and testing in work, the more I wanted to know about the publishing system and academia. 
 
 My reporting questions were largely centered around:
 1. Just how bad is the replication crisis and how can we measure it? 
