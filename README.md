@@ -17,7 +17,22 @@ My reporting questions were largely centered around:
 
 ## Tools
 
+Scraping and analysis:
+- Playwright
+- BeautifulSoup
+- NopeCHA
+- R
+
+Visualizations:
+- RAWGraphs
+- R/ggplot
+- Adobe illustrator
+- ai2html
+- Javascript/D3 for selection of HTML elements
+
 ## Files
+
+
 
 ## Data Collection and Analysis
 

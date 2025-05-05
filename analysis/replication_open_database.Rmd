@@ -5,6 +5,11 @@ date: "2025-04-23"
 output: html_document
 ---
 
+# Visualization and analysis for replication crisis story
+
+See github for additional files related to scraping and the formation of the df 
+referenced here
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -30,6 +35,7 @@ library(FReD)
 fred_data <- load_fred_data()
 ```
 
+# Create scatter plot
 
 ```{r}
 filtered <- fred_data %>% 
@@ -44,14 +50,12 @@ rownames(filtered) <- NULL
 #write out to rawgraphs
 filtered %>% 
   write_clip()
-
 ```
 
-# Make dot plot bar chart
+# Make dot plot bar chart for export to AI
 
 ```{r}
-fred_data %>% 
-  filter(!is.na(result) | id == "Arb212", validated >= 1) %>% 
+df %>% 
   group_by(result) %>%
   mutate(
     idx = row_number() - 1,
@@ -59,14 +63,39 @@ fred_data %>%
     y = -(idx %/% 5)
   ) %>%
   ungroup() %>% 
-  ggplot(aes( x= x, y = -y, color = ifelse(id == "Arb212", "power poser", result))) + 
+  ggplot(aes( x= x, y = -y, color = result)) + 
    geom_point(size = .01, ) + 
     facet_wrap(~result, scales = "free_x") 
 
 ggsave("../img/dot_plot_bar.pdf")
 ```
 
+# Field-based bar chart
+
+```{r}
+fred_data %>% 
+  #misspellings in database
+  group_by(discipline = ifelse(discipline == "Social Psychology", "Social psychology", discipline), result) %>% 
+  tally() %>% 
+  pivot_wider(names_from = result, values_from = n) %>% 
+  # take only those with non null statuses and divide by total
+  mutate(success_prop = `successful replication` / sum(`successful replication`, `OS not significant`, `failed replication`, na.rm = TRUE)) %>%
+  # filtering over 10 successful studies for relevance
+  filter(`successful replication` > 10, 
+         !is.na(discipline)) %>% 
+  ggplot(aes( x= reorder(discipline, desc(success_prop)), y = success_prop)) + 
+  geom_bar(stat = "identity") + 
+  geom_text(aes(label = success_prop)) + 
+  coord_flip() + 
+  theme_minimal()
+
+ggsave("../img/field_bar.pdf")
+```
+
+
 ### Data Cleaning
+
+Do some manual cleaning for data downloaded from webpage and dates
 
 ```{r}
 df_years <- df %>% 
@@ -87,6 +116,29 @@ df_years <- df %>%
 
 ```
 
+# Calculate citations
+
+```{r}
+df_years %>% 
+  mutate(success_flag = ifelse(result == "Success",1,0),
+         findings_flag = ifelse(findings_count == 1, "single finding", "multiple")) %>% 
+  group_by(ref_original, cited_by_count,findings_flag) %>% 
+  summarize(all_success = min(success_flag)) %>% 
+  group_by(all_success) %>% 
+  summarize(citations = sum(cited_by_count),
+            paper_count = n(),
+            med_citations = median(cited_by_count)) %>% 
+  mutate(citations_per_paper = citations/paper_count) 
+```
+
+
+
+
+
+
+-----------------------------
+
+# Other/scratch
 
 ## Tree Map
 
@@ -98,19 +150,20 @@ df_years %>%
   write_clip()
 ```
 
+
+
 ```{r}
 df_years %>% 
   mutate(success_flag = ifelse(result == "Success",1,0),
          findings_flag = ifelse(findings_count == 1, "single finding", "multiple")) %>% 
   group_by(ref_original, cited_by_count,findings_flag) %>% 
-  summarize(all_success = min(success_flag)) %>% 
-  group_by(all_success,findings_flag) %>% 
+  summarize(all_success = sum(success_flag),
+            hyp_count = n()) %>% 
+  group_by(all_success = ifelse(all_success / hyp_count > .75, 1, 0)) %>% 
   summarize(citations = sum(cited_by_count),
-            paper_count = n()) %>% 
-  ggplot(aes(x = (all_success), y= citations/paper_count)) + 
-  geom_bar(stat="identity") + 
-  facet_wrap(~findings_flag) + 
-  theme_minimal()
+            paper_count = n(),
+            med_citations = median(cited_by_count)) %>% 
+  mutate(citations_per_paper = citations/paper_count) 
 ```
 
 ```{r}
@@ -127,14 +180,6 @@ df_years %>%
   theme_minimal()
 ```
 
-
-
-
-
-
-
-
-# Other
 
 ```{r}
 df_years %>%
@@ -248,12 +293,6 @@ flag_ind_data %>%
   theme_minimal() +
   labs(x = "zav.dv.2 (discrete values)", y = "Flag") +
   theme(legend.position = "top")
-```
-
-
-
-```{r}
-
 ```
 
 ```{r}
