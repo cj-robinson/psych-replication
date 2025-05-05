@@ -43,7 +43,7 @@ Visualizations:
 
 5. **data/replication_citation_df.csv** - data with scraped google scholar results joined
 
-6. *img* - my illustrator files and ai2html outputs, plus a cover photo
+6. **img** - my illustrator files and ai2html outputs, plus a cover photo
 
 ## Data Collection and Analysis
 
