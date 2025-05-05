@@ -51,7 +51,7 @@ Visualizations:
 
 2. I took the original references in the dataset and used Playwright to loop through the 400 studies and search Google Scholar with each. I would then scrape the first result entry with BeautifulSoup getting title, abstract and citation. 
 
-3. I broke CAPTCHA's using Jonathan Soma's [NopeCHA tutoial](https://jonathansoma.com/everything/scraping/solving-captchas-in-playwright-with-nopecha/), launching Playwright with the extension and my API key
+3. I broke CAPTCHA's using Jonathan Soma's [NopeCHA tutorial](https://jonathansoma.com/everything/scraping/solving-captchas-in-playwright-with-nopecha/), launching Playwright with the extension and my API key
 
 4. Exploratory data analysis in R and visualizations on the scatter plot of original vs replication effects, total count of replications and success rate by field. 
 
